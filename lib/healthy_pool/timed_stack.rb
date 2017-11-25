@@ -6,7 +6,7 @@ require_relative 'monotonic_time'
 # Raised when you attempt to retrieve a connection from a pool that has been
 # shut down.
 
-class ConnectionPool::PoolShuttingDownError < RuntimeError; end
+class HealthyPool::PoolShuttingDownError < RuntimeError; end
 
 ##
 # The TimedStack manages a pool of homogeneous connections (or any resource
@@ -27,7 +27,7 @@ class ConnectionPool::PoolShuttingDownError < RuntimeError; end
 #    ts.pop timeout: 5
 #    #=> raises Timeout::Error after 5 seconds
 
-class ConnectionPool::TimedStack
+class HealthyPool::TimedStack
   attr_reader :max
 
   ##
@@ -89,10 +89,10 @@ class ConnectionPool::TimedStack
     options, timeout = timeout, 0.5 if Hash === timeout
     timeout = options.fetch :timeout, timeout
 
-    deadline = ConnectionPool.monotonic_time + timeout
+    deadline = HealthyPool.monotonic_time + timeout
     @mutex.synchronize do
       loop do
-        raise ConnectionPool::PoolShuttingDownError if @shutdown_block
+        raise HealthyPool::PoolShuttingDownError if @shutdown_block
         while connection_stored?(options)
           conn = fetch_connection(options)
           begin
@@ -108,7 +108,7 @@ class ConnectionPool::TimedStack
         connection = try_create(options)
         return connection if connection
 
-        to_wait = deadline - ConnectionPool.monotonic_time
+        to_wait = deadline - HealthyPool.monotonic_time
         raise Timeout::Error, "Waited #{timeout} sec" if to_wait <= 0
         @resource.wait(@mutex, to_wait)
       end

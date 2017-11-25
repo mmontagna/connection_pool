@@ -19,7 +19,7 @@ Create a pool of objects to share amongst the fibers or threads in your Ruby
 application:
 
 ``` ruby
-$memcached = ConnectionPool.new(size: 5, timeout: 5) { Dalli::Client.new }
+$memcached = HealthyPool.new(size: 5, timeout: 5) { Dalli::Client.new }
 ```
 
 Then use the pool in your application:
@@ -46,15 +46,15 @@ This will only modify the resource-get timeout for this particular
 invocation. This is useful if you want to fail-fast on certain non critical
 sections when a resource is not available, or conversely if you are comfortable
 blocking longer on a particular resource. This is not implemented in the below
-`ConnectionPool::Wrapper` class.
+`HealthyPool::Wrapper` class.
 
 ## Migrating to a Connection Pool
 
-You can use `ConnectionPool::Wrapper` to wrap a single global connection,
+You can use `HealthyPool::Wrapper` to wrap a single global connection,
 making it easier to migrate existing connection code over time:
 
 ``` ruby
-$redis = ConnectionPool::Wrapper.new(size: 5, timeout: 3) { Redis.connect }
+$redis = HealthyPool::Wrapper.new(size: 5, timeout: 3) { Redis.connect }
 $redis.sadd('foo', 1)
 $redis.smembers('foo')
 ```
@@ -72,17 +72,17 @@ end
 ```
 
 Once you've ported your entire system to use `with`, you can simply remove
-`Wrapper` and use the simpler and faster `ConnectionPool`.
+`Wrapper` and use the simpler and faster `HealthyPool`.
 
 
 ## Shutdown
 
-You can shut down a ConnectionPool instance once it should no longer be used.
+You can shut down a HealthyPool instance once it should no longer be used.
 Further checkout attempts will immediately raise an error but existing checkouts
 will work.
 
 ```ruby
-cp = ConnectionPool.new { Redis.new }
+cp = HealthyPool.new { Redis.new }
 cp.shutdown { |conn| conn.quit }
 ```
 
@@ -99,7 +99,7 @@ from the pool and a new one is created.
 
 
 ```ruby
-cp = ConnectionPool.new(health_check: lambda {|conn| conn.exec('select 1')}) { PG.connect }
+cp = HealthyPool.new(health_check: lambda {|conn| conn.exec('select 1')}) { PG.connect }
 ```
 
 

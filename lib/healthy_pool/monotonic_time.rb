@@ -5,7 +5,7 @@
 
 require 'thread'
 
-class ConnectionPool
+class HealthyPool
 
   class_definition = Class.new do
 

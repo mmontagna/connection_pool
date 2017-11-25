@@ -1,9 +1,9 @@
 # -*- encoding: utf-8 -*-
-require "./lib/connection_pool/version"
+require "./lib/healthy_pool/version"
 
 Gem::Specification.new do |s|
   s.name        = "healthy_pools"
-  s.version     = ConnectionPool::VERSION
+  s.version     = HealthyPool::VERSION
   s.platform    = Gem::Platform::RUBY
   s.authors     = ["Marco Montagna"]
   s.email       = ["marcojoemontagna@gmail.com"]

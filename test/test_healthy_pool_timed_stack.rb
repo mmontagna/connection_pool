@@ -1,13 +1,13 @@
 require_relative 'helper'
 
-class TestConnectionPoolTimedStack < Minitest::Test
+class TestHealthyPoolTimedStack < Minitest::Test
 
   def setup
-    @stack = ConnectionPool::TimedStack.new { Object.new }
+    @stack = HealthyPool::TimedStack.new { Object.new }
   end
 
   def test_empty_eh
-    stack = ConnectionPool::TimedStack.new(1) { Object.new }
+    stack = HealthyPool::TimedStack.new(1) { Object.new }
 
     refute_empty stack
 
@@ -21,7 +21,7 @@ class TestConnectionPoolTimedStack < Minitest::Test
   end
 
   def test_length
-    stack = ConnectionPool::TimedStack.new(1) { Object.new }
+    stack = HealthyPool::TimedStack.new(1) { Object.new }
 
     assert_equal 1, stack.length
 
@@ -35,7 +35,7 @@ class TestConnectionPoolTimedStack < Minitest::Test
   end
 
   def test_object_creation_fails
-    stack = ConnectionPool::TimedStack.new(2) { raise 'failure' }
+    stack = HealthyPool::TimedStack.new(2) { raise 'failure' }
 
     begin
       stack.pop
@@ -79,7 +79,7 @@ class TestConnectionPoolTimedStack < Minitest::Test
   end
 
   def test_pop_full
-    stack = ConnectionPool::TimedStack.new(1) { Object.new }
+    stack = HealthyPool::TimedStack.new(1) { Object.new }
 
     popped = stack.pop
 
@@ -104,13 +104,13 @@ class TestConnectionPoolTimedStack < Minitest::Test
   def test_pop_shutdown
     @stack.shutdown { }
 
-    assert_raises ConnectionPool::PoolShuttingDownError do
+    assert_raises HealthyPool::PoolShuttingDownError do
       @stack.pop
     end
   end
 
   def test_push
-    stack = ConnectionPool::TimedStack.new(1) { Object.new }
+    stack = HealthyPool::TimedStack.new(1) { Object.new }
 
     conn = stack.pop
 

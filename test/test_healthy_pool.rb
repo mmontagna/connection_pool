@@ -1,6 +1,6 @@
 require_relative 'helper'
 
-class TestConnectionPool < Minitest::Test
+class TestHealthyPool < Minitest::Test
 
   class NetworkConnection
     SLEEP_TIME = 0.1
@@ -61,7 +61,7 @@ class TestConnectionPool < Minitest::Test
 
   def test_basic_multithreaded_usage
     pool_size = 5
-    pool = ConnectionPool.new(size: pool_size) { NetworkConnection.new }
+    pool = HealthyPool.new(size: pool_size) { NetworkConnection.new }
 
     start = Time.new
 
@@ -83,7 +83,7 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_timeout
-    pool = ConnectionPool.new(timeout: 0, size: 1) { NetworkConnection.new }
+    pool = HealthyPool.new(timeout: 0, size: 1) { NetworkConnection.new }
     thread = Thread.new do
       pool.with do |net|
         net.do_something
@@ -105,7 +105,7 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_with
-    pool = ConnectionPool.new(timeout: 0, size: 1) { Object.new }
+    pool = HealthyPool.new(timeout: 0, size: 1) { Object.new }
 
     pool.with do
       assert_raises Timeout::Error do
@@ -117,7 +117,7 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_with_timeout
-    pool = ConnectionPool.new(timeout: 0, size: 1) { Object.new }
+    pool = HealthyPool.new(timeout: 0, size: 1) { Object.new }
 
     assert_raises Timeout::Error do
       Timeout.timeout(0.01) do
@@ -133,7 +133,7 @@ class TestConnectionPool < Minitest::Test
   def test_checkout_ignores_timeout
     skip("Thread.handle_interrupt not available") unless Thread.respond_to?(:handle_interrupt)
 
-    pool = ConnectionPool.new(timeout: 0, size: 1) { Object.new }
+    pool = HealthyPool.new(timeout: 0, size: 1) { Object.new }
     def pool.checkout(options)
       sleep 0.015
       super
@@ -157,7 +157,7 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_explicit_return
-    pool = ConnectionPool.new(timeout: 0, size: 1) do
+    pool = HealthyPool.new(timeout: 0, size: 1) do
       mock = Minitest::Mock.new
       def mock.disconnect!
         raise "should not disconnect upon explicit return"
@@ -171,7 +171,7 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_with_timeout_override
-    pool = ConnectionPool.new(timeout: 0, size: 1) { NetworkConnection.new }
+    pool = HealthyPool.new(timeout: 0, size: 1) { NetworkConnection.new }
 
     t = Thread.new do
       pool.with do |net|
@@ -192,7 +192,7 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_checkin
-    pool = ConnectionPool.new(timeout: 0, size: 1) { NetworkConnection.new }
+    pool = HealthyPool.new(timeout: 0, size: 1) { NetworkConnection.new }
     conn = pool.checkout
 
     assert_raises Timeout::Error do
@@ -205,14 +205,14 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_returns_value
-    pool = ConnectionPool.new(timeout: 0, size: 1) { Object.new }
+    pool = HealthyPool.new(timeout: 0, size: 1) { Object.new }
     assert_equal 1, pool.with {|o| 1 }
   end
 
   def test_checkin_never_checkout
-    pool = ConnectionPool.new(timeout: 0, size: 1) { Object.new }
+    pool = HealthyPool.new(timeout: 0, size: 1) { Object.new }
 
-    e = assert_raises ConnectionPool::Error do
+    e = assert_raises HealthyPool::Error do
       pool.checkin
     end
 
@@ -220,18 +220,18 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_checkin_no_current_checkout
-    pool = ConnectionPool.new(timeout: 0, size: 1) { Object.new }
+    pool = HealthyPool.new(timeout: 0, size: 1) { Object.new }
 
     pool.checkout
     pool.checkin
 
-    assert_raises ConnectionPool::Error do
+    assert_raises HealthyPool::Error do
       pool.checkin
     end
   end
 
   def test_checkin_twice
-    pool = ConnectionPool.new(timeout: 0, size: 1) { Object.new }
+    pool = HealthyPool.new(timeout: 0, size: 1) { Object.new }
 
     pool.checkout
     pool.checkout
@@ -250,7 +250,7 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_checkout
-    pool = ConnectionPool.new(size: 1) { NetworkConnection.new }
+    pool = HealthyPool.new(size: 1) { NetworkConnection.new }
 
     conn = pool.checkout
 
@@ -260,7 +260,7 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_checkout_multithread
-    pool = ConnectionPool.new(size: 2) { NetworkConnection.new }
+    pool = HealthyPool.new(size: 2) { NetworkConnection.new }
     conn = pool.checkout
 
     t = Thread.new do
@@ -271,7 +271,7 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_checkout_timeout
-    pool = ConnectionPool.new(timeout: 0, size: 0) { Object.new }
+    pool = HealthyPool.new(timeout: 0, size: 0) { Object.new }
 
     assert_raises Timeout::Error do
       pool.checkout
@@ -279,7 +279,7 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_checkout_timeout_override
-    pool = ConnectionPool.new(timeout: 0, size: 1) { NetworkConnection.new }
+    pool = HealthyPool.new(timeout: 0, size: 1) { NetworkConnection.new }
 
     thread = Thread.new do
       pool.with do |net|
@@ -298,7 +298,7 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_passthru
-    pool = ConnectionPool.wrap(timeout: 2 * NetworkConnection::SLEEP_TIME, size: 1) { NetworkConnection.new }
+    pool = HealthyPool.wrap(timeout: 2 * NetworkConnection::SLEEP_TIME, size: 1) { NetworkConnection.new }
     assert_equal 1, pool.do_something
     assert_equal 2, pool.do_something
     assert_equal 5, pool.do_something_with_block { 3 }
@@ -306,7 +306,7 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_passthru_respond_to
-    pool = ConnectionPool.wrap(timeout: 2 * NetworkConnection::SLEEP_TIME, size: 1) { NetworkConnection.new }
+    pool = HealthyPool.wrap(timeout: 2 * NetworkConnection::SLEEP_TIME, size: 1) { NetworkConnection.new }
     assert pool.respond_to?(:with)
     assert pool.respond_to?(:do_something)
     assert pool.respond_to?(:do_magic)
@@ -314,7 +314,7 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_return_value
-    pool = ConnectionPool.new(timeout: 2 * NetworkConnection::SLEEP_TIME, size: 1) { NetworkConnection.new }
+    pool = HealthyPool.new(timeout: 2 * NetworkConnection::SLEEP_TIME, size: 1) { NetworkConnection.new }
     result = pool.with do |net|
       net.fast
     end
@@ -322,7 +322,7 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_heavy_threading
-    pool = ConnectionPool.new(timeout: 0.5, size: 3) { NetworkConnection.new }
+    pool = HealthyPool.new(timeout: 0.5, size: 3) { NetworkConnection.new }
 
     threads = Array.new(20) do
       Thread.new do
@@ -336,7 +336,7 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_reuses_objects_when_pool_not_saturated
-    pool = ConnectionPool.new(size: 5) { NetworkConnection.new }
+    pool = HealthyPool.new(size: 5) { NetworkConnection.new }
 
     ids = 10.times.map do
       pool.with { |c| c.object_id }
@@ -346,7 +346,7 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_failed_health_check_removes_failed_connections
-    pool = ConnectionPool.new(size: 5, health_check: lambda {|x| false}) { NetworkConnection.new }
+    pool = HealthyPool.new(size: 5, health_check: lambda {|x| false}) { NetworkConnection.new }
 
     ids = 10.times.map do
       pool.with { |c| c.object_id }
@@ -356,7 +356,7 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_exceptions_during_health_check_removes_connections
-    pool = ConnectionPool.new(size: 5, health_check: lambda {|x| raise "failed"}) { NetworkConnection.new }
+    pool = HealthyPool.new(size: 5, health_check: lambda {|x| raise "failed"}) { NetworkConnection.new }
 
     ids = 10.times.map do
       pool.with { |c| c.object_id }
@@ -366,7 +366,7 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_failed_health_check_does_not_remove_good_connections
-    pool = ConnectionPool.new(size: 5, health_check: lambda {|x| true}) { NetworkConnection.new }
+    pool = HealthyPool.new(size: 5, health_check: lambda {|x| true}) { NetworkConnection.new }
 
     ids = 10.times.map do
       pool.with { |c| c.object_id }
@@ -377,7 +377,7 @@ class TestConnectionPool < Minitest::Test
 
   def test_nested_checkout
     recorder = Recorder.new
-    pool = ConnectionPool.new(size: 1) { recorder }
+    pool = HealthyPool.new(size: 1) { recorder }
     pool.with do |r_outer|
       @other = Thread.new do |t|
         pool.with do |r_other|
@@ -402,7 +402,7 @@ class TestConnectionPool < Minitest::Test
   def test_shutdown_is_executed_for_all_connections
     recorders = []
 
-    pool = ConnectionPool.new(size: 3) do
+    pool = HealthyPool.new(size: 3) do
       Recorder.new.tap { |r| recorders << r }
     end
 
@@ -418,11 +418,11 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_raises_error_after_shutting_down
-    pool = ConnectionPool.new(size: 1) { true }
+    pool = HealthyPool.new(size: 1) { true }
 
     pool.shutdown { }
 
-    assert_raises ConnectionPool::PoolShuttingDownError do
+    assert_raises HealthyPool::PoolShuttingDownError do
       pool.checkout
     end
   end
@@ -430,7 +430,7 @@ class TestConnectionPool < Minitest::Test
   def test_runs_shutdown_block_asynchronously_if_connection_was_in_use
     recorders = []
 
-    pool = ConnectionPool.new(size: 3) do
+    pool = HealthyPool.new(size: 3) do
       Recorder.new.tap { |r| recorders << r }
     end
 
@@ -452,7 +452,7 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_raises_an_error_if_shutdown_is_called_without_a_block
-    pool = ConnectionPool.new(size: 1) { }
+    pool = HealthyPool.new(size: 1) { }
 
     assert_raises ArgumentError do
       pool.shutdown
@@ -462,7 +462,7 @@ class TestConnectionPool < Minitest::Test
   def test_shutdown_is_executed_for_all_connections_in_wrapped_pool
     recorders = []
 
-    wrapper = ConnectionPool::Wrapper.new(size: 3) do
+    wrapper = HealthyPool::Wrapper.new(size: 3) do
       Recorder.new.tap { |r| recorders << r }
     end
 
@@ -478,13 +478,13 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_wrapper_method_missing
-    wrapper = ConnectionPool::Wrapper.new { NetworkConnection.new }
+    wrapper = HealthyPool::Wrapper.new { NetworkConnection.new }
 
     assert_equal 1, wrapper.fast
   end
 
   def test_wrapper_respond_to_eh
-    wrapper = ConnectionPool::Wrapper.new { NetworkConnection.new }
+    wrapper = HealthyPool::Wrapper.new { NetworkConnection.new }
 
     assert_respond_to wrapper, :with
 
@@ -493,7 +493,7 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_wrapper_with
-    wrapper = ConnectionPool::Wrapper.new(timeout: 0, size: 1) { Object.new }
+    wrapper = HealthyPool::Wrapper.new(timeout: 0, size: 1) { Object.new }
 
     wrapper.with do
       assert_raises Timeout::Error do
@@ -513,15 +513,15 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_wrapper_kernel_methods
-    wrapper = ConnectionPool::Wrapper.new(timeout: 0, size: 1) { ConnWithEval.new }
+    wrapper = HealthyPool::Wrapper.new(timeout: 0, size: 1) { ConnWithEval.new }
 
     assert_equal "eval'ed 1", wrapper.eval(1)
   end
 
   def test_wrapper_with_connection_pool
     recorder = Recorder.new
-    pool = ConnectionPool.new(size: 1) { recorder }
-    wrapper = ConnectionPool::Wrapper.new(pool: pool)
+    pool = HealthyPool.new(size: 1) { recorder }
+    wrapper = HealthyPool::Wrapper.new(pool: pool)
 
     pool.with { |r| r.do_work('with') }
     wrapper.do_work('wrapped')
@@ -530,14 +530,14 @@ class TestConnectionPool < Minitest::Test
   end
 
   def test_stats_without_active_connection
-    pool = ConnectionPool.new(size: 2) { NetworkConnection.new }
+    pool = HealthyPool.new(size: 2) { NetworkConnection.new }
 
     assert_equal(2, pool.size)
     assert_equal(2, pool.available)
   end
 
   def test_stats_with_active_connection
-    pool = ConnectionPool.new(size: 2) { NetworkConnection.new }
+    pool = HealthyPool.new(size: 2) { NetworkConnection.new }
 
     pool.with do
       assert_equal(1, pool.available)
