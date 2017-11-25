@@ -1,9 +1,13 @@
-connection\_pool changelog
+healthy\_pools changelog
 ---------------------------
 
 HEAD
 ------
 
+2.2.3
+------
+- Fork connection_pool to new name healthy_pools.
+- Add support for checking connection health.
 - Add pool `size` and `available` accessors for metrics and monitoring
   purposes [#97, robholland]
 
