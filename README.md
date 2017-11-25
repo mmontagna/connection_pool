@@ -87,14 +87,23 @@ Shutting down a connection pool will block until all connections are checked in 
 **Note that shutting down is completely optional**; Ruby's garbage collector will reclaim
 unreferenced pools under normal circumstances.
 
+## Managing Health of Connections
+
+You can pass a health check lambda or Proc to the connection pool which is called 
+before a connection is returned to clients to verify the connection is still good.
+If the health check returns false or throws an exception the connection is removed
+from the pool and a new one is created.
+
+
+```ruby
+cp = ConnectionPool.new(health_check: lambda {|conn| conn.exec('select 1')}) { PG.connect }
+```
+
 
 Notes
 -----
 
 - Connections are lazily created as needed.
-- There is no provision for repairing or checking the health of a connection;
-  connections should be self-repairing.  This is true of the Dalli and Redis
-  clients.
 - **WARNING**: Don't ever use `Timeout.timeout` in your Ruby code or you will see
   occasional silent corruption and mysterious errors.  The Timeout API is unsafe
   and cannot be used correctly, ever.  Use proper socket timeout options as

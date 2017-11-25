@@ -345,6 +345,36 @@ class TestConnectionPool < Minitest::Test
     assert_equal 1, ids.uniq.size
   end
 
+  def test_failed_health_check_removes_failed_connections
+    pool = ConnectionPool.new(size: 5, health_check: lambda {|x| false}) { NetworkConnection.new }
+
+    ids = 10.times.map do
+      pool.with { |c| c.object_id }
+    end
+
+    assert_equal 10, ids.uniq.size
+  end
+
+  def test_exceptions_during_health_check_removes_connections
+    pool = ConnectionPool.new(size: 5, health_check: lambda {|x| raise "failed"}) { NetworkConnection.new }
+
+    ids = 10.times.map do
+      pool.with { |c| c.object_id }
+    end
+
+    assert_equal 10, ids.uniq.size
+  end
+
+  def test_failed_health_check_does_not_remove_good_connections
+    pool = ConnectionPool.new(size: 5, health_check: lambda {|x| true}) { NetworkConnection.new }
+
+    ids = 10.times.map do
+      pool.with { |c| c.object_id }
+    end
+
+    assert_equal 1, ids.uniq.size
+  end
+
   def test_nested_checkout
     recorder = Recorder.new
     pool = ConnectionPool.new(size: 1) { recorder }

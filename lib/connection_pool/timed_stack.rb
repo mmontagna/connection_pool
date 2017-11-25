@@ -34,14 +34,29 @@ class ConnectionPool::TimedStack
   # Creates a new pool with +size+ connections that are created from the given
   # +block+.
 
-  def initialize(size = 0, &block)
+  def initialize(size = 0, health_check: nil, &block)
     @create_block = block
+    @health_check = health_check
     @created = 0
     @que = []
     @max = size
     @mutex = Mutex.new
     @resource = ConditionVariable.new
     @shutdown_block = nil
+  end
+
+  ##
+  # Removes +conn+ from the stack. This is useful if connections
+  # die or otherwise become stale.
+
+  def delete(conn)
+    if @mutex.owned?
+      @created -= 1
+    else
+      @mutex.synchronize do
+        @created -= 1
+      end
+    end
   end
 
   ##
@@ -78,7 +93,17 @@ class ConnectionPool::TimedStack
     @mutex.synchronize do
       loop do
         raise ConnectionPool::PoolShuttingDownError if @shutdown_block
-        return fetch_connection(options) if connection_stored?(options)
+        while connection_stored?(options)
+          conn = fetch_connection(options)
+          begin
+            if @health_check.nil? || @health_check.call(conn)
+              return conn
+            end
+          rescue
+          end
+          # Health check has failed, delete conn and retry.
+          delete(conn)
+        end
 
         connection = try_create(options)
         return connection if connection
