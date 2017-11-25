@@ -1,12 +1,15 @@
 connection\_pool
 =================
-[![Build Status](https://travis-ci.org/mperham/connection_pool.svg)](https://travis-ci.org/mperham/connection_pool)
+[![Build Status](https://travis-ci.org/marcomontagna/healthy_pools.svg)](https://travis-ci.org/marcomontagna/healthy_pools)
 
 Generic connection pooling for Ruby.
 
 MongoDB has its own connection pool.  ActiveRecord has its own connection pool.
 This is a generic connection pool that can be used with anything, e.g. Redis,
 Dalli and other Ruby network clients.
+
+This is a fork of [connection_pool](https://github.com/mperham/connection_pool) with 
+support for checking connection health.
 
 
 Usage
@@ -109,8 +112,3 @@ Notes
   and cannot be used correctly, ever.  Use proper socket timeout options as
   exposed by Net::HTTP, Redis, Dalli, etc.
 
-
-Author
-------
-
-Mike Perham, [@mperham](https://twitter.com/mperham), <http://mikeperham.com>
