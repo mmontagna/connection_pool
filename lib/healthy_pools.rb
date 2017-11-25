@@ -1,5 +1,5 @@
-require_relative 'healthy_pool/version'
-require_relative 'healthy_pool/timed_stack'
+require_relative 'healthy_pools/version'
+require_relative 'healthy_pools/timed_stack'
 
 
 # Generic connection pool class for e.g. sharing a limited number of network connections
@@ -7,7 +7,7 @@ require_relative 'healthy_pool/timed_stack'
 #
 # Example usage with block (faster):
 #
-#    @pool = HealthyPool.new { Redis.new }
+#    @pool = HealthyPools.new { Redis.new }
 #
 #    @pool.with do |redis|
 #      redis.lpop('my-list') if redis.llen('my-list') > 0
@@ -21,7 +21,7 @@ require_relative 'healthy_pool/timed_stack'
 #
 # Example usage replacing an existing connection (slower):
 #
-#    $redis = HealthyPool.wrap { Redis.new }
+#    $redis = HealthyPools.wrap { Redis.new }
 #
 #    def do_work
 #      $redis.lpop('my-list') if $redis.llen('my-list') > 0
@@ -31,7 +31,7 @@ require_relative 'healthy_pool/timed_stack'
 # - :size - number of connections to pool, defaults to 5
 # - :timeout - amount of time to wait for a connection if none currently available, defaults to 5 seconds
 #
-class HealthyPool
+class HealthyPools
   DEFAULTS = {size: 5, timeout: 5, health_check: nil}
 
   class Error < RuntimeError
@@ -104,7 +104,7 @@ end
         ::Thread.current[@key_count]-= 1
       end
     else
-      raise HealthyPool::Error, 'no connections are checked out'
+      raise HealthyPools::Error, 'no connections are checked out'
     end
 
     nil
@@ -130,7 +130,7 @@ end
     METHODS = [:with, :pool_shutdown]
 
     def initialize(options = {}, &block)
-      @pool = options.fetch(:pool) { ::HealthyPool.new(options, &block) }
+      @pool = options.fetch(:pool) { ::HealthyPools.new(options, &block) }
     end
 
     def with(&block)

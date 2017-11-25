@@ -5,4 +5,4 @@ require 'minitest/autorun'
 
 $VERBOSE = 1
 
-require_relative '../lib/healthy_pool'
+require_relative '../lib/healthy_pools'

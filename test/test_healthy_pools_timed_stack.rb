@@ -1,13 +1,13 @@
 require_relative 'helper'
 
-class TestHealthyPoolTimedStack < Minitest::Test
+class TestHealthyPoolsTimedStack < Minitest::Test
 
   def setup
-    @stack = HealthyPool::TimedStack.new { Object.new }
+    @stack = HealthyPools::TimedStack.new { Object.new }
   end
 
   def test_empty_eh
-    stack = HealthyPool::TimedStack.new(1) { Object.new }
+    stack = HealthyPools::TimedStack.new(1) { Object.new }
 
     refute_empty stack
 
@@ -21,7 +21,7 @@ class TestHealthyPoolTimedStack < Minitest::Test
   end
 
   def test_length
-    stack = HealthyPool::TimedStack.new(1) { Object.new }
+    stack = HealthyPools::TimedStack.new(1) { Object.new }
 
     assert_equal 1, stack.length
 
@@ -35,7 +35,7 @@ class TestHealthyPoolTimedStack < Minitest::Test
   end
 
   def test_object_creation_fails
-    stack = HealthyPool::TimedStack.new(2) { raise 'failure' }
+    stack = HealthyPools::TimedStack.new(2) { raise 'failure' }
 
     begin
       stack.pop
@@ -79,7 +79,7 @@ class TestHealthyPoolTimedStack < Minitest::Test
   end
 
   def test_pop_full
-    stack = HealthyPool::TimedStack.new(1) { Object.new }
+    stack = HealthyPools::TimedStack.new(1) { Object.new }
 
     popped = stack.pop
 
@@ -104,13 +104,13 @@ class TestHealthyPoolTimedStack < Minitest::Test
   def test_pop_shutdown
     @stack.shutdown { }
 
-    assert_raises HealthyPool::PoolShuttingDownError do
+    assert_raises HealthyPools::PoolShuttingDownError do
       @stack.pop
     end
   end
 
   def test_push
-    stack = HealthyPool::TimedStack.new(1) { Object.new }
+    stack = HealthyPools::TimedStack.new(1) { Object.new }
 
     conn = stack.pop
 

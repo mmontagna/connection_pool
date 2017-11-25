@@ -1,3 +1,3 @@
-class HealthyPool
+class HealthyPools
   VERSION = "2.2.4"
 end

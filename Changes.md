@@ -98,7 +98,7 @@ end
 - We now reuse objects when possible.
 
     This means that under no contention, the same object will be checked
-    out from the pool after subsequent calls to `HealthyPool#with`.
+    out from the pool after subsequent calls to `HealthyPools#with`.
 
     This change should have no impact on end user performance. If
     anything, it should be an improvement, depending on what objects you
@@ -117,11 +117,11 @@ end
 0.9.0
 --------
 
-- Move method\_missing magic into HealthyPool::Wrapper (djanowski)
+- Move method\_missing magic into HealthyPools::Wrapper (djanowski)
 - Remove BasicObject superclass (djanowski)
 
 0.1.0
 --------
 
 - More precise timeouts and better error message
-- HealthyPool now subclasses BasicObject so `method_missing` is more effective.
+- HealthyPools now subclasses BasicObject so `method_missing` is more effective.
