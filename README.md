@@ -1,4 +1,4 @@
-connection\_pool
+healthy_pools
 =================
 [![Build Status](https://travis-ci.org/marcomontagna/healthy_pools.svg)](https://travis-ci.org/marcomontagna/healthy_pools)
 
